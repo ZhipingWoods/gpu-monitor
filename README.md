@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="README_EN.md">English</a> · <a href="README.md">中文</a> · <a href="#demo">Live Demo</a>
+  <a href="README.md">English</a> · <a href="README_ZH.md">中文</a> · <a href="#demo">Live Demo</a>
 </p>
 
 ---
