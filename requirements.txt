@@ -1,0 +1,7 @@
+# GPU Monitor Dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+nvidia-ml-py==12.535.133
+gpustat==1.1.1
+psutil==5.9.6
+aiohttp==3.9.1

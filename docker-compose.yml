@@ -1,0 +1,32 @@
+services:
+  gpu-monitor:
+    build: .
+    container_name: gpu-monitor
+    ports:
+      - "1312:1312"
+    environment:
+      - GPU_MONITOR_MODE=hub
+      - NODE_URLS=
+      - DEBUG=false
+    volumes:
+      - ./config.py:/app/config.py:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 0
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1312/api/me"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - gpu-network
+
+networks:
+  gpu-network:
+    driver: bridge

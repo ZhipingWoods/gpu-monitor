@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPU Monitor - Demo</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <script src="https://unpkg.com/element-plus"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@element-plus/icons-vue">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        #app { min-height: 100vh; }
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .demo-badge {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .main-content { padding: 24px; max-width: 1600px; margin: 0 auto; }
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .stat-card .label { color: #666; font-size: 14px; margin-bottom: 8px; }
+        .stat-card .value { font-size: 32px; font-weight: 600; color: #1a1a2e; }
+        .stat-card .value.online { color: #52c41a; }
+        .stat-card .value.offline { color: #ff4d4f; }
+        .page-tabs { margin-bottom: 24px; }
+        .node-card {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .node-header {
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .node-header:hover { background: #fafafa; }
+        .node-title { display: flex; align-items: center; gap: 12px; }
+        .node-title h3 { font-size: 16px; font-weight: 600; color: #1a1a2e; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .status-dot.online { background: #52c41a; box-shadow: 0 0 8px #52c41a; }
+        .status-dot.offline { background: #ff4d4f; }
+        .node-summary { display: flex; gap: 24px; color: #666; font-size: 14px; }
+        .node-summary span { display: flex; align-items: center; gap: 4px; }
+        .gpu-list { padding: 0 20px 20px; }
+        .gpu-item {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .gpu-header {
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
+            cursor: pointer;
+        }
+        .gpu-info { display: flex; align-items: center; gap: 16px; }
+        .gpu-name { font-weight: 600; color: #1a1a2e; }
+        .gpu-metrics { display: flex; gap: 20px; font-size: 14px; }
+        .metric { display: flex; align-items: center; gap: 4px; }
+        .metric-label { color: #666; }
+        .metric-value { font-weight: 500; }
+        .metric-value.warning { color: #faad14; }
+        .metric-value.danger { color: #ff4d4f; }
+        .user-bar-container { padding: 12px 16px; background: #f5f7fa; }
+        .user-bar-label { font-size: 12px; color: #666; margin-bottom: 8px; }
+        .user-bar {
+            height: 28px;
+            background: #e8e8e8;
+            border-radius: 4px;
+            display: flex;
+            overflow: hidden;
+        }
+        .user-segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            min-width: 60px;
+            transition: opacity 0.3s;
+            position: relative;
+        }
+        .user-segment:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2e;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 10;
+        }
+        .gpu-details { padding: 16px; background: #fafafa; border-top: 1px solid #eee; }
+        .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+        .detail-item { display: flex; justify-content: space-between; font-size: 14px; }
+        .detail-label { color: #666; }
+        .detail-value { font-weight: 500; color: #1a1a2e; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+        .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: #666; }
+        .last-update { font-size: 12px; color: #999; text-align: center; margin-top: 16px; }
+        .overview-table { width: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .overview-table th, .overview-table td { padding: 14px 16px; text-align: left; }
+        .overview-table th { background: #fafafa; font-weight: 600; color: #666; font-size: 14px; }
+        .overview-table td { border-top: 1px solid #eee; font-size: 14px; }
+        .overview-table tr:hover td { background: #fafafa; }
+        .overview-gpu-bars { display: flex; flex-direction: column; gap: 4px; }
+        .overview-gpu-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .overview-gpu-bar .gpu-index { color: #666; min-width: 30px; }
+        .overview-bar { flex: 1; height: 16px; background: #e8e8e8; border-radius: 3px; overflow: hidden; display: flex; }
+        .overview-bar .user-segment { height: 100%; font-size: 10px; }
+        .overview-users { font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="header-left">
+                <h1>GPU Monitor</h1>
+            </div>
+            <div class="demo-badge">🚀 Demo Mode</div>
+        </div>
+        <div class="main-content">
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="label">节点总数</div>
+                    <div class="value">{{ clusterStats.total_nodes || 0 }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">在线节点</div>
+                    <div class="value online">{{ clusterStats.online_nodes || 0 }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">离线节点</div>
+                    <div class="value offline">{{ clusterStats.offline_nodes || 0 }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">GPU总数</div>
+                    <div class="value">{{ clusterStats.total_gpus || 0 }}</div>
+                </div>
+            </div>
+            <el-tabs v-model="activeTab" class="page-tabs">
+                <el-tab-pane label="集群总览" name="overview">
+                    <table class="overview-table" v-if="Object.keys(nodes).length > 0">
+                        <thead>
+                            <tr><th>服务器</th><th>状态</th><th>GPU显存使用</th><th>用户占用</th><th>最后更新</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(node, name) in nodes" :key="name" @click="showNodeDetail(name)" style="cursor: pointer;">
+                                <td><strong>{{ name }}</strong></td>
+                                <td><span class="status-dot" :class="node.status"></span> {{ node.status === 'online' ? '在线' : '离线' }}</td>
+                                <td>
+                                    <div class="overview-gpu-bars">
+                                        <div v-for="(gpu, idx) in node.gpus" :key="idx" class="overview-gpu-bar">
+                                            <span class="gpu-index">GPU {{ idx }}</span>
+                                            <div class="overview-bar">
+                                                <div v-for="(user, ui) in gpu.users" :key="ui" class="user-segment" :style="{ width: user.percent + '%', background: userColors[ui % userColors.length] }" :data-tooltip="user.name + ': ' + formatMemory(user.occupy)"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><div class="overview-users"><span v-for="(gpu, idx) in node.gpus" :key="idx"><span v-for="(user, ui) in gpu.users" :key="ui">{{ user.name }}{{ ui < gpu.users.length - 1 ? ', ' : '' }}</span></span></div></td>
+                                <td>{{ formatTime(node.last_update) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div v-else class="empty-state"><h3>暂无数据</h3><p>请确保至少有一个GPU节点正在运行</p></div>
+                </el-tab-pane>
+                <el-tab-pane label="节点详情" name="detail">
+                    <div v-if="!selectedNode">
+                        <el-select v-model="selectedNodeName" placeholder="选择服务器" @change="selectNode" style="width: 300px; margin-bottom: 20px;">
+                            <el-option v-for="(node, name) in nodes" :key="name" :label="name" :value="name" />
+                        </el-select>
+                    </div>
+                    <div v-if="selectedNode">
+                        <div style="margin-bottom: 16px;"><el-button @click="selectedNode = null">返回列表</el-button></div>
+                        <div v-for="(gpu, idx) in selectedNode.gpus" :key="idx" class="gpu-item">
+                            <div class="gpu-header" @click="toggleGpuDetails(idx)">
+                                <div class="gpu-info"><span class="gpu-name">GPU {{ idx }}: {{ gpu.name }}</span></div>
+                                <div class="gpu-metrics">
+                                    <span class="metric"><span class="metric-label">利用率:</span><span class="metric-value" :class="getUtilClass(gpu.utilization)">{{ gpu.utilization }}%</span></span>
+                                    <span class="metric"><span class="metric-label">温度:</span><span class="metric-value" :class="getTempClass(gpu.temperature)">{{ gpu.temperature }}°C</span></span>
+                                    <span class="metric"><span class="metric-label">显存:</span><span class="metric-value">{{ formatMemory(gpu.memory_used) }} / {{ formatMemory(gpu.memory_total) }}</span></span>
+                                </div>
+                            </div>
+                            <div class="user-bar-container">
+                                <div class="user-bar-label">显存占用 (按用户)</div>
+                                <div class="user-bar">
+                                    <div v-for="(user, ui) in gpu.users" :key="ui" class="user-segment" :style="{ width: user.percent + '%', background: userColors[ui % userColors.length] }" :data-tooltip="user.name + ': ' + formatMemory(user.occupy) + ' (' + user.percent + '%)'">{{ user.percent > 15 ? user.name : '' }}</div>
+                                    <div v-if="gpu.users.length === 0" class="user-segment" style="width: 100%; background: #e8e8e8; color: #999;">空闲</div>
+                                </div>
+                            </div>
+                            <div v-show="expandedGpus[idx]" class="gpu-details">
+                                <div class="details-grid">
+                                    <div class="detail-item"><span class="detail-label">显存使用率</span><span class="detail-value">{{ Math.round(gpu.memory_used / gpu.memory_total * 100) }}%</span></div>
+                                    <div class="detail-item"><span class="detail-label">功率</span><span class="detail-value">{{ gpu.power_draw }}W / {{ gpu.power_limit }}W</span></div>
+                                    <div class="detail-item"><span class="detail-label">风扇</span><span class="detail-value">{{ gpu.fan_speed }}%</span></div>
+                                    <div class="detail-item"><span class="detail-label">图形时钟</span><span class="detail-value">{{ gpu.clock_graphics }}MHz / {{ gpu.clock_graphics_max }}MHz</span></div>
+                                    <div class="detail-item"><span class="detail-label">显存时钟</span><span class="detail-value">{{ gpu.clock_memory }}MHz / {{ gpu.clock_memory_max }}MHz</span></div>
+                                    <div class="detail-item"><span class="detail-label">性能状态</span><span class="detail-value">{{ gpu.performance_state }}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </el-tab-pane>
+            </el-tabs>
+            <div class="last-update">最后更新: {{ lastUpdate }} (Demo数据每5秒刷新)</div>
+        </div>
+    </div>
+    <script>
+        const { createApp, ref, reactive, onMounted, onUnmounted } = Vue;
+        const app = createApp({
+            setup() {
+                const activeTab = ref('overview');
+                const nodes = reactive({});
+                const clusterStats = reactive({ total_nodes: 0, online_nodes: 0, offline_nodes: 0, total_gpus: 0 });
+                const lastUpdate = ref('');
+                const selectedNode = ref(null);
+                const selectedNodeName = ref('');
+                const expandedGpus = reactive({});
+                const userColors = ['#2e75b6', '#f4b183', '#a9d18e', '#c00000', '#9dc3e6', '#ffd966', '#b4c7e7', '#ea9999'];
+                let pollTimer = null;
+
+                const fetchData = async () => {
+                    try {
+                        const response = await fetch('/api/demo/cluster');
+                        const data = await response.json();
+                        if (data.cluster_stats) {
+                            Object.assign(clusterStats, data.cluster_stats);
+                        }
+                        if (data.nodes) {
+                            for (const [name, node] of Object.entries(data.nodes)) {
+                                if (!nodes[name]) { Vue.reactive(nodes[name] = {}); }
+                                Object.assign(nodes[name], node);
+                            }
+                            const currentNames = Object.keys(data.nodes);
+                            for (const name of Object.keys(nodes)) { if (!currentNames.includes(name)) { delete nodes[name]; } }
+                        }
+                        lastUpdate.value = new Date().toLocaleTimeString();
+                    } catch (e) { console.error('Error fetching data:', e); }
+                };
+
+                const formatMemory = (mb) => { if (mb >= 1024) { return (mb / 1024).toFixed(1) + 'GB'; } return mb + 'MB'; };
+                const formatTime = (isoString) => { if (!isoString) return '-'; try { return new Date(isoString).toLocaleTimeString(); } catch { return '-'; } };
+                const getUtilClass = (val) => { if (val >= 90) return 'danger'; if (val >= 70) return 'warning'; return ''; };
+                const getTempClass = (val) => { if (val >= 80) return 'danger'; if (val >= 60) return 'warning'; return ''; };
+                const toggleGpuDetails = (idx) => { expandedGpus[idx] = !expandedGpus[idx]; };
+                const showNodeDetail = (name) => { selectedNodeName.value = name; selectNode(name); activeTab.value = 'detail'; };
+                const selectNode = (name) => { selectedNode.value = nodes[name] || null; for (const key in expandedGpus) { expandedGpus[key] = false; } };
+
+                onMounted(() => { fetchData(); pollTimer = setInterval(fetchData, 5000); });
+                onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
+
+                return { activeTab, nodes, clusterStats, lastUpdate, selectedNode, selectedNodeName, expandedGpus, userColors, logout: () => {}, formatMemory, formatTime, getUtilClass, getTempClass, toggleGpuDetails, showNodeDetail, selectNode };
+            }
+        });
+        app.use(ElementPlus);
+        app.mount('#app');
+    </script>
+</body>
+</html>
