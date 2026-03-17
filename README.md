@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · <a href="README_zh.md">中文</a> · <a href="#demo">在线演示</a>
+  <a href="README_EN.md">English</a> · <a href="README.md">中文</a> · <a href="#demo">在线演示</a>
 </p>
 
 ---
@@ -200,10 +200,18 @@ NODE_NAME = 'my-gpu-server'  # 本服务器名称
 
 ```bash
 # 演示模式 (使用模拟数据)
-VERCEL_DEPLOY=true python app.py
+DEMO_MODE=true python app.py
 ```
 
 访问 Vercel 部署的链接即可查看 Demo。
+
+**演示账号 (Demo Mode 自动登录):**
+- 用户名: `demo`
+- 密码: `demo123`
+
+**生产环境账号 (需自行配置):**
+- 用户名: `admin`
+- 密码: `admin123`
 
 ---
 
@@ -225,10 +233,6 @@ VERCEL_DEPLOY=true python app.py
   - FastAPI + AsyncIO 高性能架构
   - 丰富的 NVML 指标收集
   - Hub 模式多节点聚合
-
-- **[multi-gpu-monitor](https://github.com/your-repo/multi-gpu-monitor)** - Multi-GPU server monitoring
-  - 用户进程跟踪
-  - 分段进度条可视化
 
 感谢以上项目的作者和贡献者!
 

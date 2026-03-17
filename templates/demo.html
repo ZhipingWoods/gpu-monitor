@@ -295,7 +295,17 @@
                 const showNodeDetail = (name) => { selectedNodeName.value = name; selectNode(name); activeTab.value = 'detail'; };
                 const selectNode = (name) => { selectedNode.value = nodes[name] || null; for (const key in expandedGpus) { expandedGpus[key] = false; } };
 
-                onMounted(() => { fetchData(); pollTimer = setInterval(fetchData, 5000); });
+                onMounted(async () => {
+                    // Auto-login for demo mode
+                    try {
+                        await fetch('/api/demo/login', { credentials: 'same-origin' });
+                    } catch (e) {
+                        console.log('Demo auto-login skipped');
+                    }
+                    // Fetch data
+                    fetchData();
+                    pollTimer = setInterval(fetchData, 5000);
+                });
                 onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
 
                 return { activeTab, nodes, clusterStats, lastUpdate, selectedNode, selectedNodeName, expandedGpus, userColors, logout: () => {}, formatMemory, formatTime, getUtilClass, getTempClass, toggleGpuDetails, showNodeDetail, selectNode };

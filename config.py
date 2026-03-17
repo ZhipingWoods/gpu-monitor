@@ -20,6 +20,12 @@ USERS = {
     'gpuadmin': 'gpu2024',
 }
 
+# Demo Mode Users (only active when DEMO_MODE=true)
+DEMO_USERS = {
+    'demo': 'demo123',
+    'admin': 'admin123',
+}
+
 # Session Configuration
 SESSION_LIFETIME = 3600  # seconds
 

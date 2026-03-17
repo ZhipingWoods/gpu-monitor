@@ -278,6 +278,26 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # For Vercel deployment without GPU access
 if config.DEMO_MODE:
     import demo_data
+    from core.auth import create_session
+
+    # Demo auto-login endpoint
+    @app.get("/api/demo/login")
+    async def demo_auto_login():
+        """Auto-login for demo mode"""
+        token = create_session('demo')
+        response = JSONResponse({
+            "success": True,
+            "username": "demo",
+            "demo_mode": True
+        })
+        response.set_cookie(
+            key=SESSION_COOKIE_NAME,
+            value=token,
+            httponly=True,
+            max_age=3600,
+            samesite="lax"
+        )
+        return response
 
     @app.get("/demo")
     async def demo_page():
